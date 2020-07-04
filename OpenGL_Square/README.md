@@ -1,115 +1,265 @@
-####核心框架导入
-```
-#include "GLShaderManager.h"
-#include "GLTools.h"
-#include <GLUT/GLUT.h>
-```
-`#include<GLShaderManager.h>` 移入了GLTool 着色器管理器（shader Mananger）类。没有着色器，我们就不能在OpenGL（核心框架）进行着色。着色器管理器不仅允许我们创建并管理着色器，还提供一组“存储着色器”，他们能够进行一些初步䄦基本的渲染操作。
+####基础设置
+- 初始化GLUT库，初始化双缓冲窗口
 
-`#include<GLTools.h>`  GLTool.h头文件包含了大部分GLTool中类似C语言的独立函数
-
-在Mac 系统下，`#include<glut/glut.h>`
- 在Windows 和 Linux上，我们使用freeglut的静态库版本并且需要添加一个宏
-
-#####定义一个，着色管理器&批次容器
-```
-GLShaderManager shaderManager;
-GLBatch triangleBatch
-```
-#####初始化GLUT库,这个函数只是传说命令参数并且初始化glut库
 ```
 glutInit(&argc, argv);
-```
-#####初始化双缓冲窗口
-```
 glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGBA|GLUT_DEPTH|GLUT_STENCIL);
 ```
-#####GLUT设置窗口大小、窗口标题
+
+- GLUT窗口大小、窗口标题
+
 ```
-glutInitWindowSize(800, 600);
-glutCreateWindow("Triangle");
+glutInitWindowSize(500, 500);
+glutCreateWindow("Square");
 ```
-#####注册重塑函数
+
+- 注册重塑函数，显示函数
+
 ```
+//注册重塑函数
 glutReshapeFunc(changeSize);
-```
-#####注册显示函数
-```
+//注册显示函数
 glutDisplayFunc(RenderScene);
 ```
-**初始化一个GLEW库,确保OpenGL API对程序完全可用。
-     在试图做任何渲染之前，要检查确定驱动程序的初始化过程中没有任何问题。**
+
+- 初始化一个GLEW库
 ```
 GLenum status = glewInit();
-    if (GLEW_OK != status) {
-        
-        printf("GLEW Error:%s\n",glewGetErrorString(status));
+if (GLEW_OK != status) {
+    printf("GLEW Error:%s\n",glewGetErrorString(status));
         return 1;
-        
-    }
+}
 ```
-#####设置我们的渲染环境并开启
+
+- 设置我们的渲染环境并开启
+
 ```
 setupRC();
 glutMainLoop();
 ```
-#####void setupRC()  初始化设置
+
+
+`changeSize()`：首次加载或者窗口发生变化时会调用，触发重绘
+
+```
+void changeSize(int w,int h) {
+    //x,y 参数代表窗口中视图的左下角坐标，而宽度、高度是像素为表示，通常x,y 都是为0
+    glViewport(0, 0, w, h);
+}
+```
+
+`RenderScene()`：渲染出屏幕上需要显示的内容
+
+`setupRC()`：初始化设置
+
+####画一个正方形
+**设置到原点的距离**
+
+```
+GLfloat blockSize = 0.1f;
+```
+
+**设置4个顶点坐标**
+
+```
+GLfloat vVerts[] = {
+        -blockSize,-blockSize,0.0f, //A
+        blockSize,-blockSize,0.0f,  //B
+        blockSize,blockSize,0.0f,  //C
+        -blockSize,blockSize,0.0f //D
+};
+```
+
+**初始化设置**
+
 ```
 void setupRC() {
     //设置清屏颜色（背景颜色）
-    glClearColor(0.0f, 1.0f, 0.0f, 1);
-    
-    
-    //没有着色器，在OpenGL 核心框架中是无法进行任何渲染的。初始化一个渲染管理器。
-    //在前面的课程，我们会采用固管线渲染，后面会学着用OpenGL着色语言来写着色器
+    glClearColor(0.2f, 1.0f, 0.0f, 1);
+
+    //初始化一个渲染管理器。
     shaderManager.InitializeStockShaders();
     
-    
-    //指定顶点
-    //在OpenGL中，三角形是一种基本的3D图元绘图原素。
-    GLfloat vVerts[] = {
-        -1.0f,0.0f,0.0f,
-        1.0f,0.0f,0.0f,
-        0.0f,1.0f,0.0f
-    };
-    
-    triangleBatch.Begin(GL_TRIANGLES, 3);
+    //GL_TRIANGLE_FAN ，4个顶点
+    triangleBatch.Begin(GL_TRIANGLE_FAN, 4);
     triangleBatch.CopyVertexData3f(vVerts);
     triangleBatch.End();
-    
 }
 ```
-#####void changeSize(int w,int h)  在窗口大小改变时会调用，接收新的宽度&高度
-```
-void changeSize(int w,int h) {
-    /*
-      x,y 参数代表窗口中视图的左下角坐标，而宽度、高度是像素为表示，通常x,y 都是为0
-     */
-    glViewport(0, 0, w, h);
-    
-}
-```
-#####void RenderScene(void)  渲染
+
+**完成渲染逻辑**
+
 ```
 void RenderScene(void) {
 
-    //1.清除一个或者一组特定的缓存区
+    //清除一个或者一组特定的缓存区
     /*
-     缓冲区是一块存在图像信息的储存空间，红色、绿色、蓝色和alpha分量通常一起分量通常一起作为颜色缓存区或像素缓存区引用。
-     OpenGL 中不止一种缓冲区（颜色缓存区、深度缓存区和模板缓存区）
-      清除缓存区对数值进行预置
-     参数：指定将要清除的缓存的
      GL_COLOR_BUFFER_BIT :指示当前激活的用来进行颜色写入缓冲区
      GL_DEPTH_BUFFER_BIT :指示深度缓存区
      GL_STENCIL_BUFFER_BIT:指示模板缓冲区
      */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
     
-    //2.设置一组浮点数来表示红色
-    GLfloat vRed[] = {1.0,1.00,0.0,0.5f};
+    //设置一组浮点数来表示颜色
+    GLfloat vRed[] = {1.0,1.0,0.0,0.5f};
     
     //传递到存储着色器，即GLT_SHADER_IDENTITY着色器，这个着色器只是使用指定颜色以默认笛卡尔坐标第在屏幕上渲染几何图形
     shaderManager.UseStockShader(GLT_SHADER_IDENTITY,vRed);
+    //提交着色器
+    triangleBatch.Draw();
+    //将后台缓冲区进行渲染，然后结束后交换给前台
+    glutSwapBuffers();
+}
+```
+
+**运行后能得到一个正方形**
+
+![正方形](https://upload-images.jianshu.io/upload_images/8416233-a224710f12a06f24.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+####通过键盘控制操作移动图形
+
+**注册一个特殊函**
+
+```
+glutSpecialFunc(SpecialKeys);
+```
+
+**这个函数能获取键盘输入的内容，通过获取的键位来实现图像的移动**
+
+**设置步长**
+
+```
+GLfloat stepSize = 0.025f;
+```
+
+**取出其中一个顶点作为相对顶点使用**
+
+```
+    /*
+     顶点顺序
+     D  C
+     
+     A  B
+     */
+    
+    //取其中一个点作为相对顶点  使用D点
+    GLfloat blockX = vVerts[9];
+    GLfloat blockY = vVerts[10];
+```
+
+**根据键盘输入移动参数点**
+
+```
+    if (key == GLUT_KEY_UP) {
+        blockY += stepSize;
+    }
+    if (key == GLUT_KEY_DOWN) {
+        blockY -= stepSize;
+    }
+    if (key == GLUT_KEY_LEFT) {
+        blockX -= stepSize;
+    }
+    if (key == GLUT_KEY_RIGHT) {
+        blockX += stepSize;
+    }
+```
+
+**根据参数点，更新所有顶点信息**
+
+```
+    //更新其他顶点
+    //A
+    vVerts[0] = blockX;
+    vVerts[1] = blockY - blockSize * 2;
+    
+    //B
+    vVerts[3] = blockX + blockSize * 2;
+    vVerts[4] = blockY - blockSize * 2;
+    
+    //C
+    vVerts[6] = blockX + blockSize * 2;
+    vVerts[7] = blockY;
+    
+    //D
+    vVerts[9] = blockX;
+    vVerts[10] = blockY;
+```
+
+**提交更新点并提交**
+
+```
+    //提交更新点
+    triangleBatch.CopyVertexData3f(vVerts);
+    //重新渲染
+    glutPostRedisplay();
+```
+
+**自此，我们可以通过键盘的上下左右来移动图形**
+
+**但是还是存在一个问题，图形会超过边界，为了防止这个问题，需要在更新所有顶点前做边界判断**
+
+```
+    //边界检测
+    //左边界限制
+    if (blockX < -1.0) {
+        blockX = -1.0;
+    }
+    //右边界限制  因为取的是D点 所以还要加上图形的边长
+    if (blockX > 1.0 - blockSize * 2) {
+        blockX = 1.0 - blockSize * 2;
+    }
+    //下边界限制  因为取的是D点 所以还要加上图形的边长
+    if (blockY < -1.0 + blockSize * 2) {
+        blockY = -1.0 + blockSize * 2;
+    }
+    //上边界限制
+    if (blockX > 1.0) {
+        blockY = 1.0;
+    }
+```
+**完成了边界检测后就能满足用键盘移动图形的需求，其中`glutPostRedisplay()`会触发`RenderScene()`进行重新渲染**
+
+####通过矩阵的方式进行图形移动
+
+通过对所有顶点的更新能完成图形移动的效果，但是如果碰到了多边形，顶点处很多的情况下，通过更新顶点的方式代码量和计算量过大，可以使用**矩阵平移**的形式进行移动的操作
+
+**定义2个参数用于记录偏移量**
+
+```
+GLfloat xPos = 0.0f; //记录图形在X轴的偏移数值 用于矩阵移动
+GLfloat yPos = 0.0f; //记录图形在Y轴的偏移数值 用于矩阵移动
+```
+
+**注册一个新的键盘监听函数**
+
+```
+glutSpecialFunc(SpecialKeysWithMatrix);
+```
+
+**重写`RenderScene()`函数，使用平面着色器**
+
+```
+void RenderScene(void) {
+
+    //清除一个或者一组特定的缓存区
+    /*
+     GL_COLOR_BUFFER_BIT :指示当前激活的用来进行颜色写入缓冲区
+     GL_DEPTH_BUFFER_BIT :指示深度缓存区
+     GL_STENCIL_BUFFER_BIT:指示模板缓冲区
+     */
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+    
+    //设置一组浮点数来表示颜色
+    GLfloat vRed[] = {1.0,1.0,0.0,0.5f};
+    
+    //使用矩阵
+    M3DMatrix44f mTransfromMatrix;
+    
+    //平移矩阵
+    m3dTranslationMatrix44(mTransfromMatrix, xPos, yPos, 0);
+    
+    //平面着色器 （固定着色器）
+    shaderManager.UseStockShader(GLT_SHADER_FLAT,mTransfromMatrix,vRed);
     
     //提交着色器
     triangleBatch.Draw();
@@ -120,4 +270,48 @@ void RenderScene(void) {
     
 }
 ```
-![运行结果](https://upload-images.jianshu.io/upload_images/8416233-a528cda8e78ed64b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+**编写移动逻辑**
+
+```
+void SpecialKeysWithMatrix(int key, int x, int y) {
+    //设置步长
+    GLfloat stepSize = 0.025f;
+    
+    if (key == GLUT_KEY_UP) {
+        yPos += stepSize;
+    }
+    if (key == GLUT_KEY_DOWN) {
+        yPos -= stepSize;
+    }
+    if (key == GLUT_KEY_LEFT) {
+        xPos -= stepSize;
+    }
+    if (key == GLUT_KEY_RIGHT) {
+        xPos += stepSize;
+    }
+    
+    //边界检测 现在控制的是偏移量 可以认为是中心点 需要加上边长
+    //左边界限制
+    if (xPos < -1.0 + blockSize) {
+        xPos = -1.0 + blockSize;
+    }
+    //右边界限制
+    if (xPos > 1.0 - blockSize) {
+        xPos = 1.0 - blockSize;
+    }
+    //下边界限制
+    if (yPos < -1.0 + blockSize) {
+        yPos = -1.0 + blockSize;
+    }
+    //上边界限制
+    if (yPos > 1.0 - blockSize) {
+        yPos = 1.0 - blockSize;
+    }
+    
+    //重新渲染
+    glutPostRedisplay();
+}
+```
+
+**矩阵移动使用是偏移量，在边界检测时可以认为是中心点，所以需要额外计算一个顶点到原点的距离**
