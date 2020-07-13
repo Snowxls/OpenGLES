@@ -62,8 +62,17 @@ void RenderScene(void) {
         glFrontFace(GL_CCW); //默认值 可以不填
         glCullFace(GL_BACK); //默认值 可以不填
     } else {
-        glDisable(GL_CULL_FACE); //关闭
+        glDisable(GL_CULL_FACE); //关闭  会影响整个工程 用完需要关闭
     }
+    
+    if (iDepth) {
+        //深度测试
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_POLYGON_OFFSET_FILL);
+    } else {
+        glDisable(GL_DEPTH_TEST); //关闭  会影响整个工程 用完需要关闭
+    }
+    
     
     modelViewMatix.PushMatrix(viewFrame);
     
@@ -131,6 +140,25 @@ void SpecialKeys(int key, int x, int y) {
     if (key == 113) {
         //按键"Q" 开启/关闭 正表面剔除
         iCull = !iCull;
+    }
+    if (key == 119) {
+        //按键"W" 开启/关闭 深度测试
+        iDepth = !iDepth;
+    }
+    
+    if (key == 49) {
+        //按键"1"  正常填充
+        glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+    }
+    
+    if (key == 50) {
+        //按键"2"  线填充
+        glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+    }
+    
+    if (key == 51) {
+        //按键"3"  点填充
+        glPolygonMode(GL_FRONT_AND_BACK,GL_POINT);
     }
     
     
