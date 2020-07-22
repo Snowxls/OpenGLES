@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		80579CF324C818CF0058F473 /* Marslike.tga in Resources */ = {isa = PBXBuildFile; fileRef = 80579CF024C818CE0058F473 /* Marslike.tga */; };
+		80579CF424C818CF0058F473 /* MoonLike.tga in Resources */ = {isa = PBXBuildFile; fileRef = 80579CF124C818CE0058F473 /* MoonLike.tga */; };
+		80579CF524C818CF0058F473 /* Marble.tga in Resources */ = {isa = PBXBuildFile; fileRef = 80579CF224C818CF0058F473 /* Marble.tga */; };
 		80AB78E824AA17B0002EAB9E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 80AB78E724AA17B0002EAB9E /* Assets.xcassets */; };
 		80AB78EB24AA17B0002EAB9E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 80AB78E924AA17B0002EAB9E /* Main.storyboard */; };
 		80AB78F924AA17B0002EAB9E /* OpenGL_DemoTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 80AB78F824AA17B0002EAB9E /* OpenGL_DemoTests.m */; };
@@ -35,6 +38,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		80579CF024C818CE0058F473 /* Marslike.tga */ = {isa = PBXFileReference; lastKnownFileType = file; path = Marslike.tga; sourceTree = "<group>"; };
+		80579CF124C818CE0058F473 /* MoonLike.tga */ = {isa = PBXFileReference; lastKnownFileType = file; path = MoonLike.tga; sourceTree = "<group>"; };
+		80579CF224C818CF0058F473 /* Marble.tga */ = {isa = PBXFileReference; lastKnownFileType = file; path = Marble.tga; sourceTree = "<group>"; };
 		80AB78DE24AA17A8002EAB9E /* OpenGL_Demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenGL_Demo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		80AB78E724AA17B0002EAB9E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		80AB78EA24AA17B0002EAB9E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -124,6 +130,9 @@
 				80AB78EC24AA17B0002EAB9E /* Info.plist */,
 				80AB78EF24AA17B0002EAB9E /* OpenGL_Demo.entitlements */,
 				80AB792A24AA1921002EAB9E /* main.cpp */,
+				80579CF224C818CF0058F473 /* Marble.tga */,
+				80579CF024C818CE0058F473 /* Marslike.tga */,
+				80579CF124C818CE0058F473 /* MoonLike.tga */,
 			);
 			path = OpenGL_Demo;
 			sourceTree = "<group>";
@@ -288,8 +297,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				80579CF424C818CF0058F473 /* MoonLike.tga in Resources */,
+				80579CF324C818CF0058F473 /* Marslike.tga in Resources */,
 				80AB78E824AA17B0002EAB9E /* Assets.xcassets in Resources */,
 				80AB78EB24AA17B0002EAB9E /* Main.storyboard in Resources */,
+				80579CF524C818CF0058F473 /* Marble.tga in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
