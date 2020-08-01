@@ -21,9 +21,17 @@
 
 #import "ShaderView.h"
 #import <OpenGLES/ES2/gl.h>
+#import "GLESMath.h"
+#import "GLESUtils.h"
 
 @interface ShaderView (){
-    
+    float xDegree;
+    float yDegree;
+    float zDegree;
+    BOOL bX;
+    BOOL bY;
+    BOOL bZ;
+    NSTimer* myTimer;
 }
 
 //在iOS和tvOS上绘制OpenGL ES内容的图层 继承与CALayer
@@ -36,10 +44,51 @@
 @property (nonatomic,assign)GLuint myColorFrameBuffer;
 
 @property (nonatomic,assign)GLuint myPrograme;
+@property (nonatomic,assign)GLuint myVertices;
 
 @end
 
 @implementation ShaderView
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self createUI];
+    }
+    return self;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        [self createUI];
+    }
+    return self;
+}
+
+- (void)createUI {
+    UIButton *btnX = [[UIButton alloc] initWithFrame:CGRectMake(10, self.frame.size.height-60, 50, 50)];
+    [btnX setTitle:@"X" forState:UIControlStateNormal];
+    [btnX setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    btnX.backgroundColor = [UIColor yellowColor];
+    [btnX addTarget:self action:@selector(XClick:) forControlEvents:UIControlEventTouchUpInside];
+    [self addSubview:btnX];
+    
+    UIButton *btnY = [[UIButton alloc] initWithFrame:CGRectMake((self.frame.size.width-50)/2, self.frame.size.height-60, 50, 50)];
+    [btnY setTitle:@"Y" forState:UIControlStateNormal];
+    [btnY setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    btnY.backgroundColor = [UIColor orangeColor];
+    [btnY addTarget:self action:@selector(YClick:) forControlEvents:UIControlEventTouchUpInside];
+    [self addSubview:btnY];
+    
+    UIButton *btnZ = [[UIButton alloc] initWithFrame:CGRectMake(self.frame.size.width-60, self.frame.size.height-60, 50, 50)];
+    [btnZ setTitle:@"Z" forState:UIControlStateNormal];
+    [btnZ setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    btnZ.backgroundColor = [UIColor blueColor];
+    [btnZ addTarget:self action:@selector(ZClick:) forControlEvents:UIControlEventTouchUpInside];
+    [self addSubview:btnZ];
+    
+}
 
 - (void)layoutSubviews {
     
@@ -150,7 +199,7 @@
 //开始绘制
 - (void)renderLayer {
     //设置清屏颜色
-    glClearColor(0.3f, 0.45f, 0.5f, 1.0f);
+    glClearColor(1, 1, 1, 1.0);
     //清除屏幕
     glClear(GL_COLOR_BUFFER_BIT);
     
@@ -159,8 +208,14 @@
     glViewport(self.frame.origin.x * scale, self.frame.origin.y * scale, self.frame.size.width * scale, self.frame.size.height * scale);
     
     //读取顶点着色程序、片元着色程序
-    NSString *vertFile = [[NSBundle mainBundle] pathForResource:@"shaderv.vsh" ofType:nil];
-    NSString *fragFile = [[NSBundle mainBundle] pathForResource:@"shaderf.fsh" ofType:nil];
+    NSString *vertFile = [[NSBundle mainBundle] pathForResource:@"shaderv.glsl" ofType:nil];
+    NSString *fragFile = [[NSBundle mainBundle] pathForResource:@"shaderf.glsl" ofType:nil];
+    
+    //判断self.myProgram是否存在，存在则清空其文件
+    if (self.myPrograme) {
+        glDeleteProgram(self.myPrograme);
+        self.myPrograme = 0;
+    }
     
     //加载shader
     self.myPrograme = [self loaderShaders:vertFile withFrag:fragFile];
@@ -190,23 +245,33 @@
 
 //准备顶点数据/纹理坐标
 - (void)setData {
-    //前3个是顶点坐标，后2个是纹理坐标
+    //创建顶点数组 & 索引数组
+    //(1)顶点数组 前3顶点值（x,y,z），后3位颜色值(RGB) 默认透明度1 最后2位是纹理坐标
     GLfloat attrArr[] = {
-        0.5f, -0.5f, -1.0f,     1.0f, 0.0f,
-        -0.5f, 0.5f, -1.0f,     0.0f, 1.0f,
-        -0.5f, -0.5f, -1.0f,    0.0f, 0.0f,
+        -0.5f, 0.5f, 0.0f,      1.0f, 0.0f, 1.0f,  1.0f,0.0f,   //左上0
+        0.5f, 0.5f, 0.0f,       1.0f, 0.0f, 1.0f,  1.0f,1.0f,   //右上1
+        -0.5f, -0.5f, 0.0f,     1.0f, 1.0f, 1.0f,  0.0f,0.0f,   //左下2
         
-        0.5f, 0.5f, -1.0f,      1.0f, 1.0f,
-        -0.5f, 0.5f, -1.0f,     0.0f, 1.0f,
-        0.5f, -0.5f, -1.0f,     1.0f, 0.0f,
+        0.5f, -0.5f, 0.0f,      1.0f, 1.0f, 1.0f,  0.0f,1.0f,   //右下3
+        0.0f, 0.0f, 1.0f,       0.0f, 1.0f, 0.0f,  0.5f,0.5f,   //顶点4
     };
     
-    //顶点数据 copy 顶点缓冲区
-    GLuint attrBuffer;
-    //申请一个缓存区标识符
-    glGenBuffers(1, &attrBuffer);
+    //(2).索引数组
+    GLuint indices[] = {
+        0, 3, 2,
+        0, 1, 3,
+        0, 2, 4,
+        0, 4, 1,
+        2, 3, 4,
+        1, 4, 3,
+    };
+    
+    if (self.myVertices == 0) {
+        glGenBuffers(1, &_myVertices);
+    }
+    
     //将attrBuffer绑定到GL_ARRAY_BUFFER标识符上
-    glBindBuffer(GL_ARRAY_BUFFER, attrBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, _myVertices);
     //把顶点数据从CPU内存复制到GPU上
     glBufferData(GL_ARRAY_BUFFER, sizeof(attrArr), attrArr, GL_DYNAMIC_DRAW);
     
@@ -225,12 +290,82 @@
     //参数4：normalized,固定点数据值是否应该归一化，或者直接转换为固定值。（GL_FALSE）
     //参数5：stride,连续顶点属性之间的偏移量，默认为0；
     //参数6：指定一个指针，指向数组中的第一个顶点属性的第一个组件。默认为0
-    glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, NULL);
+    glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, NULL);
     
-    //打开纹理通道
+    //打开颜色通道
+    GLuint positionColor = glGetAttribLocation(self.myPrograme, "positionColor");
+    glEnableVertexAttribArray(positionColor);
+    glVertexAttribPointer(positionColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (float *)NULL + 3);
+    
+    //纹理
     GLuint textCoor = glGetAttribLocation(self.myPrograme, "textCoordinate");
     glEnableVertexAttribArray(textCoor);
-    glVertexAttribPointer(textCoor, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat)*5, (float *)NULL + 3);
+    glVertexAttribPointer(textCoor, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (float *)NULL + 6);
+    
+    
+    //MVP
+    GLuint projectionMatrixSlot = glGetUniformLocation(self.myPrograme, "projectionMatrix");
+    GLuint modelViewMatrixSlot = glGetUniformLocation(self.myPrograme, "modelViewMatrix");
+    
+    float width = self.frame.size.width;
+    float height = self.frame.size.height;
+    
+    //创建4 * 4投影矩阵
+    KSMatrix4 _projectionMatrix;
+    //(1)获取单元矩阵
+    ksMatrixLoadIdentity(&_projectionMatrix);
+    //(2)计算纵横比例 = 长/宽
+    float aspect = width / height; //长宽比
+    //(3)获取透视矩阵
+    /*
+     参数1：矩阵
+     参数2：视角，度数为单位
+     参数3：纵横比
+     参数4：近平面距离
+     参数5：远平面距离
+     参考PPT
+     */
+    ksPerspective(&_projectionMatrix, 30.0, aspect, 5.0f, 20.0f); //透视变换，视角30°
+    //(4)将投影矩阵传递到顶点着色器
+    /*
+     void glUniformMatrix4fv(GLint location,  GLsizei count,  GLboolean transpose,  const GLfloat *value);
+     参数列表：
+     location:指要更改的uniform变量的位置
+     count:更改矩阵的个数
+     transpose:是否要转置矩阵，并将它作为uniform变量的值。必须为GL_FALSE
+     value:执行count个元素的指针，用来更新指定uniform变量
+     */
+    glUniformMatrix4fv(projectionMatrixSlot, 1, GL_FALSE, (GLfloat*)&_projectionMatrix.m[0][0]);
+    
+    //创建一个4 * 4 矩阵，模型视图矩阵
+    KSMatrix4 _modelViewMatrix;
+    //(1)获取单元矩阵
+    ksMatrixLoadIdentity(&_modelViewMatrix);
+    //(2)平移，z轴平移-10
+    ksTranslate(&_modelViewMatrix, 0.0, 0.0, -10.0);
+    //(3)创建一个4 * 4 矩阵，旋转矩阵
+    KSMatrix4 _rotationMatrix;
+    //(4)初始化为单元矩阵
+    ksMatrixLoadIdentity(&_rotationMatrix);
+    //(5)旋转
+    ksRotate(&_rotationMatrix, xDegree, 1.0, 0.0, 0.0); //绕X轴
+    ksRotate(&_rotationMatrix, yDegree, 0.0, 1.0, 0.0); //绕Y轴
+    ksRotate(&_rotationMatrix, zDegree, 0.0, 0.0, 1.0); //绕Z轴
+    //(6)把变换矩阵相乘.将_modelViewMatrix矩阵与_rotationMatrix矩阵相乘，结合到模型视图
+    ksMatrixMultiply(&_modelViewMatrix, &_rotationMatrix, &_modelViewMatrix);
+    //(7)将模型视图矩阵传递到顶点着色器
+    /*
+     void glUniformMatrix4fv(GLint location,  GLsizei count,  GLboolean transpose,  const GLfloat *value);
+     参数列表：
+     location:指要更改的uniform变量的位置
+     count:更改矩阵的个数
+     transpose:是否要转置矩阵，并将它作为uniform变量的值。必须为GL_FALSE
+     value:执行count个元素的指针，用来更新指定uniform变量
+     */
+    glUniformMatrix4fv(modelViewMatrixSlot, 1, GL_FALSE, (GLfloat*)&_modelViewMatrix.m[0][0]);
+    
+    //正背面剔除
+    glEnable(GL_CULL_FACE);
     
     //加载纹理
     [self setTexture:@"Snow.jpeg"];
@@ -238,8 +373,30 @@
     //设置纹理采样器 sampler2D
     glUniform1i(glGetUniformLocation(self.myPrograme, "colorMap"), 0);
     
-    //绘图
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    //索引绘制
+    /*
+    void glDrawElements(GLenum mode,GLsizei count,GLenum type,const GLvoid * indices);
+    参数列表：
+    mode:要呈现的画图的模型
+               GL_POINTS
+               GL_LINES
+               GL_LINE_LOOP
+               GL_LINE_STRIP
+               GL_TRIANGLES
+               GL_TRIANGLE_STRIP
+               GL_TRIANGLE_FAN
+    count:绘图个数
+    type:类型
+            GL_BYTE
+            GL_UNSIGNED_BYTE
+            GL_SHORT
+            GL_UNSIGNED_SHORT
+            GL_INT
+            GL_UNSIGNED_INT
+    indices：绘制索引数组
+
+    */
+    glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(indices[0]), GL_UNSIGNED_INT, indices);
     
     //从渲染缓存区显示到屏幕上
     [self.myContext presentRenderbuffer:GL_RENDERBUFFER];
@@ -360,6 +517,45 @@
     
     //编译
     glCompileShader(*shader);
+}
+
+#pragma mark - XYClick
+- (void)XClick:(UIButton *)sender {
+    //开启定时器
+    if (!myTimer) {
+        myTimer = [NSTimer scheduledTimerWithTimeInterval:0.05 target:self selector:@selector(reDegree) userInfo:nil repeats:YES];
+    }
+    //更新的是X还是Y
+    bX = !bX;
+}
+
+- (void)YClick:(UIButton *)sender {
+    //开启定时器
+    if (!myTimer) {
+        myTimer = [NSTimer scheduledTimerWithTimeInterval:0.05 target:self selector:@selector(reDegree) userInfo:nil repeats:YES];
+    }
+    //更新的是X还是Y
+    bY = !bY;
+}
+
+- (void)ZClick:(UIButton *)sender {
+    //开启定时器
+    if (!myTimer) {
+        myTimer = [NSTimer scheduledTimerWithTimeInterval:0.05 target:self selector:@selector(reDegree) userInfo:nil repeats:YES];
+    }
+    //更新的是X还是Y
+    bZ = !bZ;
+}
+
+-(void)reDegree {
+    //如果停止X轴旋转，X = 0则度数就停留在暂停前的度数.
+    //更新度数
+    xDegree += bX * 5;
+    yDegree += bY * 5;
+    zDegree += bZ * 5;
+    //重新渲染
+    [self renderLayer];
+    
 }
 
 @end
