@@ -133,7 +133,7 @@
     //纹理转换 GLKit
     NSDictionary *options = @{GLKTextureLoaderOriginBottomLeft:@(YES)};
     GLKTextureInfo *textureInfo = [GLKTextureLoader textureWithCGImage:image.CGImage options:options error:nil];
-    //打开通道
+    //打开纹理通道
     glEnableVertexAttribArray(GLKVertexAttribTexCoord0);
     glVertexAttribPointer(GLKVertexAttribTexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (GLfloat *)NULL + 6);
 

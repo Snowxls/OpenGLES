@@ -7,9 +7,16 @@ uniform sampler2D colorMap;
 
 void main (){
 //    gl_FragColor = varyColor;
-    gl_FragColor = texture2D(colorMap, varyTextCoord);
+//    gl_FragColor = texture2D(colorMap, varyTextCoord);
+    
+    vec4 weakMask = texture2D(colorMap, varyTextCoord);
+    vec4 mask = varyColor;
+    float alpha = 0.3;
+    
+    vec4 tempColor = mask * (1.0 - alpha) + weakMask * alpha;
+    
+    gl_FragColor = tempColor;
 }
-
 
 
 
